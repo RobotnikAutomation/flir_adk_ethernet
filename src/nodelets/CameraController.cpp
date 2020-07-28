@@ -29,24 +29,37 @@ void CameraController::setupFramePublish() {
     capture_timer = nh.createTimer(ros::Duration(1.0 / _frameRate),
         boost::bind(&CameraController::captureAndPublish, this, _1));
     _last_capture_time = ros::Time::now();
+    _last_camera_stamp = ros::Time(0, 0); // init to something, we only want to see that this changes
     _post_init = true;
 }
 
 void CameraController::captureAndPublish(const ros::TimerEvent &evt)
 {
-    ros::Time stamp(_camera->getActualTimestamp() * 1e-9);
-    if (stamp >= _last_capture_time || _post_init) {
-        if (publishImage(stamp)) {
-            if (_post_init) {
-                ROS_INFO("initial capture delay was %f seconds", (ros::Time::now() - stamp).toSec());
-            }
-            _last_capture_time = stamp;
+    ros::Time now(ros::Time::now());
+    ros::Time camera_stamp;
+
+    // try to get the latest image
+    bool capture_success = publishImage(ros::Time::now());
+    if (capture_success) {
+        camera_stamp = ros::Time(_camera->getActualTimestamp() * 1e-9);
+        if (_post_init) {
+            ROS_INFO("initial capture delay was %f seconds", (ros::Time::now() - camera_stamp).toSec());
             _post_init = false;
         }
-    } else if ((ros::Time::now() - _last_capture_time) > _timeout) {
+    }
+    // check if we have a timeout
+    if ((now - _last_capture_time) > _timeout) {
         // We have not received a new frame, after timeout we should just kill the node so that it can be restarted
         // TODO: Add restart on camera disconnect/failure capability
         ROS_ERROR("flir_adk_ethernet - Stopped receiving frames from camera after %f seconds, exiting", _timeout.toSec());
         ros::shutdown();
+    }
+    // update image time tracking
+    if (capture_success) {
+        // only update the capture time when we really get a new image
+        if (camera_stamp != _last_camera_stamp) {
+            _last_capture_time = now;
+        }
+        _last_camera_stamp = camera_stamp;
     }
 }

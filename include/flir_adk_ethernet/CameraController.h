@@ -48,7 +48,8 @@ class CameraController : public BaseCameraController
     void captureAndPublish(const ros::TimerEvent& evt);
 
     ros::Timer capture_timer;
-    ros::Time _last_capture_time;
+    ros::Time _last_capture_time; // system time when image grabbed
+    ros::Time _last_camera_stamp; // camera reported capture time
     ros::Duration _timeout;
 
     float _frameRate;
