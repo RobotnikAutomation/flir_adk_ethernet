@@ -40,7 +40,7 @@ namespace flir_adk_ethernet
 class CameraController : public BaseCameraController
 {
   public:
-    CameraController();
+    CameraController(ros::Duration timeout = ros::Duration(2.0));
     ~CameraController();
 
   private:
@@ -49,6 +49,7 @@ class CameraController : public BaseCameraController
 
     ros::Timer capture_timer;
     ros::Time _last_capture_time;
+    ros::Duration _timeout;
 
     float _frameRate;
     bool zoom_enable;
