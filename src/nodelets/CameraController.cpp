@@ -13,7 +13,6 @@ PLUGINLIB_EXPORT_CLASS(flir_adk_ethernet::CameraController, nodelet::Nodelet)
 using namespace cv;
 using namespace flir_adk_ethernet;
 
-// TODO: should we give last capture time a head start to account for the intial delay of capture?
 CameraController::CameraController(ros::Duration timeout) : BaseCameraController(), _timeout(timeout), _last_capture_time(ros::Time::now())
 {
 }
@@ -28,13 +27,22 @@ void CameraController::setupFramePublish() {
 
     capture_timer = nh.createTimer(ros::Duration(1.0 / _frameRate),
         boost::bind(&CameraController::captureAndPublish, this, _1));
-    _last_capture_time = ros::Time::now();
-    _last_camera_stamp = ros::Time(0, 0); // init to something, we only want to see that this changes
+    _last_capture_time = ros::Time::now(); // pretend last capture was at init, this allows us to handle startup failures
+    _last_camera_stamp = ros::Time(0, 0);  // init to something, we only want to see that this changes
     _post_init = true;
 }
 
 void CameraController::captureAndPublish(const ros::TimerEvent &evt)
 {
+    /*
+     * The capture state machine below is designed to handle several different types of capture failures
+     * 1. Capture is not successful for length of timeout
+     * 2. So many capture failures in row that a new frame is never aquired in a whole timeout period
+     * 3. Camera timestamps stop being updated for an entire timeout period
+     *
+     * When a capture failure occurs, the node is shut down. A launchfile can set respawn to true to allow the node to restart on failure.
+     * TODO: integrate camera-capture and device-finding restart capabilities into the node itself
+    */
     ros::Time now(ros::Time::now());
     ros::Time camera_stamp;
 
@@ -43,6 +51,7 @@ void CameraController::captureAndPublish(const ros::TimerEvent &evt)
     if (capture_success) {
         camera_stamp = ros::Time(_camera->getActualTimestamp() * 1e-9);
         if (_post_init) {
+            // TODO: camera timestamps should be synchronized to os clock on start of capture right?
             ROS_INFO("initial capture delay was %f seconds", (ros::Time::now() - camera_stamp).toSec());
             _post_init = false;
         }
