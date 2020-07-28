@@ -70,12 +70,10 @@ void ImageEventHandler::OnImageEvent(ImagePtr image) {
 }
 
 void *ImageEventHandler::GetImageData() {
+    std::lock_guard<std::mutex> guard(m_mutex); // hold the mutex until after return
     if(m_resultImage == nullptr) {
         throw "No image has been received";
     }
-
-    m_mutex.lock();
-    m_mutex.unlock();
     return m_resultImage->GetData();
 }
 
