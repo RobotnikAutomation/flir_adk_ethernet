@@ -48,6 +48,7 @@ class CameraController : public BaseCameraController
     void captureAndPublish(const ros::TimerEvent& evt);
 
     ros::Timer capture_timer;
+    ros::Time _last_capture_time;
 
     float _frameRate;
     bool zoom_enable;
