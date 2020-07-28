@@ -53,6 +53,7 @@ class CameraController : public BaseCameraController
 
     float _frameRate;
     bool zoom_enable;
+    bool _post_init; // one-time flag for handling start of acquisition
     SensorTypes sensor_type;
     Encoding _videoMode;
 };

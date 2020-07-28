@@ -180,7 +180,7 @@ void BaseCameraController::setCenterROI(const sensor_msgs::RegionOfInterestConst
 
 
 
-void BaseCameraController::publishImage(ros::Time timestamp) {
+bool BaseCameraController::publishImage(ros::Time timestamp) {
     sensor_msgs::CameraInfoPtr
         ci(new sensor_msgs::CameraInfo(_camera->getCameraInfo()));
 
@@ -198,8 +198,10 @@ void BaseCameraController::publishImage(ros::Time timestamp) {
         _imagePublisher.publish(publishedImage, ci);
 
         _seq++;
+        return true;
     } catch(exception e) {
         // just don't publish this frame
         std::cout << "Publish exception" << std::endl;
+        return false;
     }
 }

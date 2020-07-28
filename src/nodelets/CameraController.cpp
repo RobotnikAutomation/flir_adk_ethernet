@@ -28,13 +28,21 @@ void CameraController::setupFramePublish() {
 
     capture_timer = nh.createTimer(ros::Duration(10.0 / _frameRate),
         boost::bind(&CameraController::captureAndPublish, this, _1));
+    _last_capture_time = ros::Time::now();
+    _post_init = true;
 }
 
 void CameraController::captureAndPublish(const ros::TimerEvent &evt)
 {
-    ros::Time stamp(_camera->getActualTimestamp());
-    if (stamp >= _last_capture_time) {
-        publishImage(stamp);
+    ros::Time stamp(_camera->getActualTimestamp() * 1e-9);
+    if (stamp >= _last_capture_time || _post_init) {
+        if (publishImage(stamp)) {
+            if (_post_init) {
+                ROS_INFO("initial capture delay was %f seconds", (ros::Time::now() - stamp).toSec());
+            }
+            _last_capture_time = stamp;
+            _post_init = false;
+        }
     } else if ((ros::Time::now() - _last_capture_time) > _timeout) {
         // We have not received a new frame, after timeout we should just kill the node so that it can be restarted
         // TODO: Add restart on camera disconnect/failure capability
