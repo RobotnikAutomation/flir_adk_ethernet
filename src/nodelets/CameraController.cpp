@@ -26,7 +26,7 @@ void CameraController::setupFramePublish() {
     pnh.param<float>("frame_rate", _frameRate, 60.0);
     ROS_INFO("flir_adk_ethernet - Got frame rate: %f.", _frameRate);
 
-    capture_timer = nh.createTimer(ros::Duration(10.0 / _frameRate),
+    capture_timer = nh.createTimer(ros::Duration(1.0 / _frameRate),
         boost::bind(&CameraController::captureAndPublish, this, _1));
     _last_capture_time = ros::Time::now();
     _post_init = true;
