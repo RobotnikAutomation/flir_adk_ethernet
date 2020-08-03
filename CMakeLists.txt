@@ -21,113 +21,130 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 
-add_message_files(
-  FILES
-  MultiTimeHeader.msg
-)
+# If Spinnaker is already present, use the found version.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+find_package(Spinnaker QUIET)
+if(NOT Spinnaker_FOUND)
+  message(WARNING "libSpinnaker not found in system library path, this package will not be built")
+# Download spinnaker. We can't resolve this dependency using the usual rosdep means because
+# the Point Grey EULA prohibits redistributing the headers or the packages which
+# contains them. We work around this by downloading the archive directly from
+# their website during this step in the build process.
+#   include(cmake/DownloadSpinnaker.cmake)
+#   download_spinnaker(Spinnaker_LIBRARIES Spinnaker_INCLUDE_DIRS)
+else() # Spinnake_FOUND
 
-add_service_files(
-  FILES
-  GetNode.srv
-)
+  message(STATUS "libSpinnaker library: ${Spinnaker_LIBRARIES}")
+  message(STATUS "libSpinnaker include: ${Spinnaker_INCLUDE_DIRS}")
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
-
-catkin_package(
-  CATKIN_DEPENDS
-  camera_info_manager
-  image_transport
-  cv_bridge
-  nodelet
-  sensor_msgs
-  message_runtime
-)
-
-include_directories(
-  include
-  ${OpenCV_INCLUDE_DIRS}
-  ${catkin_INCLUDE_DIRS}
-  /usr/include/spinnaker
-)
-
-add_executable(${PROJECT_NAME}_node
-  src/flir_adk_ethernet_node.cpp
-)
-
-add_dependencies(${PROJECT_NAME}_node
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS}
-)
-
-target_link_libraries(${PROJECT_NAME}_node
-  ${OpenCV_LIBRARIES}
-  ${catkin_LIBRARIES}
-)
-
-FILE(GLOB SpinLibs /usr/lib/libSpin*.so)
-
-add_library(BosonCameraEthernet
-  src/nodelets/BaseCameraController.cpp
-  src/nodelets/CameraController.cpp
-  src/nodelets/SyncCameraController.cpp
-  src/nodelets/TimeSynchronizer.cpp
-  src/nodelets/TimeDifference.cpp
-  src/flir_adk_ethernet/EthernetCamera.cpp
-  src/flir_adk_ethernet/ImageEventHandler.cpp
-  src/flir_adk_ethernet/ImageFormat.cpp
-  src/flir_adk_ethernet/Util.cpp
-  spinnaker_wrappers/CameraListWrapper.cpp
-  spinnaker_wrappers/SystemWrapper.cpp
-  spinnaker_wrappers/CameraWrapper.cpp
-)
-
-add_dependencies(BosonCameraEthernet
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS}
-)
-
-target_link_libraries(BosonCameraEthernet
-  ${OpenCV_LIBRARIES}
-  ${catkin_LIBRARIES}
-  ${SpinLibs}
-)
-
-set(ROSLINT_CPP_OPTS "--filter=-runtime/threadsafe_fn,-build/namespaces,-build/include_what_you_use")
-roslint_cpp()
-
-install(TARGETS ${PROJECT_NAME}_node BosonCameraEthernet
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY
-  launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(FILES nodelet_plugins.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-if (CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(${PROJECT_NAME}-test 
-    test/test_flir_adk_ethernet.cpp
+  add_message_files(
+    FILES
+    MultiTimeHeader.msg
   )
-  target_link_libraries(${PROJECT_NAME}-test 
+
+  add_service_files(
+    FILES
+    GetNode.srv
+  )
+
+  generate_messages(
+    DEPENDENCIES
+    std_msgs
+  )
+
+  catkin_package(
+    CATKIN_DEPENDS
+    camera_info_manager
+    image_transport
+    cv_bridge
+    nodelet
+    sensor_msgs
+    message_runtime
+  )
+
+  include_directories(
+    include
+    ${OpenCV_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
+    ${Spinnaker_INCLUDE_DIRS}
+  )
+
+  add_executable(${PROJECT_NAME}_node
+    src/flir_adk_ethernet_node.cpp
+  )
+
+  add_dependencies(${PROJECT_NAME}_node
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
+    ${catkin_EXPORTED_TARGETS}
+  )
+
+  target_link_libraries(${PROJECT_NAME}_node
+    ${OpenCV_LIBRARIES}
     ${catkin_LIBRARIES}
-    BosonCameraEthernet
+    ${Spinnaker_LIBRARIES}
   )
 
-endif()
+  add_library(BosonCameraEthernet
+    src/nodelets/BaseCameraController.cpp
+    src/nodelets/CameraController.cpp
+    src/nodelets/SyncCameraController.cpp
+    src/nodelets/TimeSynchronizer.cpp
+    src/nodelets/TimeDifference.cpp
+    src/flir_adk_ethernet/EthernetCamera.cpp
+    src/flir_adk_ethernet/ImageEventHandler.cpp
+    src/flir_adk_ethernet/ImageFormat.cpp
+    src/flir_adk_ethernet/Util.cpp
+    spinnaker_wrappers/CameraListWrapper.cpp
+    spinnaker_wrappers/SystemWrapper.cpp
+    spinnaker_wrappers/CameraWrapper.cpp
+  )
 
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+  add_dependencies(BosonCameraEthernet
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
+    ${catkin_EXPORTED_TARGETS}
+  )
+
+  target_link_libraries(BosonCameraEthernet
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${Spinnaker_LIBRARIES}
+  )
+
+  set(ROSLINT_CPP_OPTS "--filter=-runtime/threadsafe_fn,-build/namespaces,-build/include_what_you_use")
+  roslint_cpp()
+
+  install(TARGETS ${PROJECT_NAME}_node BosonCameraEthernet
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+
+  install(DIRECTORY
+    launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  )
+
+  install(FILES nodelet_plugins.xml
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  )
+
+  #############
+  ## Testing ##
+  #############
+
+  ## Add gtest based cpp test target and link libraries
+  if (CATKIN_ENABLE_TESTING)
+    catkin_add_gtest(${PROJECT_NAME}-test
+      test/test_flir_adk_ethernet.cpp
+    )
+    target_link_libraries(${PROJECT_NAME}-test
+      ${catkin_LIBRARIES}
+      BosonCameraEthernet
+    )
+
+  endif()
+
+  ## Add folders to be run by python nosetests
+  # catkin_add_nosetests(test)
+
+endif() # NOT Spinnake_FOUND
