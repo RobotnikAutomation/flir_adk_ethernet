@@ -32,36 +32,38 @@ if(NOT Spinnaker_FOUND)
 # their website during this step in the build process.
 #   include(cmake/DownloadSpinnaker.cmake)
 #   download_spinnaker(Spinnaker_LIBRARIES Spinnaker_INCLUDE_DIRS)
-else() # Spinnake_FOUND
+else() # Spinnaker_FOUND
 
   message(STATUS "libSpinnaker library: ${Spinnaker_LIBRARIES}")
   message(STATUS "libSpinnaker include: ${Spinnaker_INCLUDE_DIRS}")
+endif() # NOT Spinnaker_FOUND
 
-  add_message_files(
-    FILES
-    MultiTimeHeader.msg
-  )
+add_message_files(
+  FILES
+  MultiTimeHeader.msg
+)
 
-  add_service_files(
-    FILES
-    GetNode.srv
-  )
+add_service_files(
+  FILES
+  GetNode.srv
+)
 
-  generate_messages(
-    DEPENDENCIES
-    std_msgs
-  )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
-  catkin_package(
-    CATKIN_DEPENDS
-    camera_info_manager
-    image_transport
-    cv_bridge
-    nodelet
-    sensor_msgs
-    message_runtime
-  )
+catkin_package(
+  CATKIN_DEPENDS
+  camera_info_manager
+  image_transport
+  cv_bridge
+  nodelet
+  sensor_msgs
+  message_runtime
+)
 
+if(Spinnaker_FOUND)
   include_directories(
     include
     ${OpenCV_INCLUDE_DIRS}
@@ -147,4 +149,4 @@ else() # Spinnake_FOUND
   ## Add folders to be run by python nosetests
   # catkin_add_nosetests(test)
 
-endif() # NOT Spinnake_FOUND
+endif() # Spinnaker_FOUND
