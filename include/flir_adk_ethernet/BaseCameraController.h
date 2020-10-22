@@ -86,6 +86,7 @@ class BaseCameraController : public nodelet::Nodelet
     uint64_t _seq = 0;
     std::shared_ptr<image_transport::ImageTransport> it;
     cv_bridge::CvImage _cvImage;
+    image_transport::CameraPublisher _imagePublisher16;
     image_transport::CameraPublisher _imagePublisher;
     EthernetCamera *_camera;
     std::string frame_id, video_mode_str;

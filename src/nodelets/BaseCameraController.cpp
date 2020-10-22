@@ -31,6 +31,7 @@ void BaseCameraController::onInit()
         pnh = getPrivateNodeHandle();
 
         it = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nh));
+        _imagePublisher16 = it->advertiseCamera("image_raw16", 1);
         _imagePublisher = it->advertiseCamera("image_raw", 1);
         setupExtraPubSub();
 
@@ -52,7 +53,7 @@ void BaseCameraController::onInit()
         ROS_INFO("flir_adk_ethernet - Got frame_id: %s.", frame_id.c_str());
         ROS_INFO("flir_adk_ethernet - Got IP: %s.", ip.c_str());
         ROS_INFO("flir_adk_ethernet - Got camera_info_url: %s.", cameraInfoStr.c_str());
-        ROS_INFO("flir_adk_ethernet - Got video_format: %s.", formatStr.c_str());
+        ROS_INFO("flir_adk_ethernet - PV Got video_format: %s.", formatStr.c_str());
         ROS_INFO("flir_adk_ethernet - Got camera_type: %s.", camType.c_str());
         ROS_INFO("flir_adk_ethernet - Got width: %d.", width);
         ROS_INFO("flir_adk_ethernet - Got height: %d.", height);
@@ -189,6 +190,8 @@ bool BaseCameraController::publishImage(ros::Time timestamp) {
 
     try {
         auto thermalMat = _camera->getImageMatrix();
+        Mat thermalMat8;
+        normalize(thermalMat, thermalMat8, 0, 255, NORM_MINMAX, CV_8UC1);
         _cvImage.image = thermalMat;
         _cvImage.encoding = _camera->getEncoding();
         _cvImage.header.stamp = timestamp;
@@ -198,7 +201,12 @@ bool BaseCameraController::publishImage(ros::Time timestamp) {
         auto publishedImage = _cvImage.toImageMsg();
 
         ci->header.stamp = publishedImage->header.stamp;
-        _imagePublisher.publish(publishedImage, ci);
+        _imagePublisher16.publish(publishedImage, ci);
+
+        _cvImage.image = thermalMat8;
+        _cvImage.encoding = "mono8";
+        auto publishedImage8 = _cvImage.toImageMsg();
+        _imagePublisher.publish(publishedImage8, ci);
 
         _seq++;
         return true;
