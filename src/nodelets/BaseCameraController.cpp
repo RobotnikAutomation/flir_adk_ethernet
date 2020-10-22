@@ -53,7 +53,7 @@ void BaseCameraController::onInit()
         ROS_INFO("flir_adk_ethernet - Got frame_id: %s.", frame_id.c_str());
         ROS_INFO("flir_adk_ethernet - Got IP: %s.", ip.c_str());
         ROS_INFO("flir_adk_ethernet - Got camera_info_url: %s.", cameraInfoStr.c_str());
-        ROS_INFO("flir_adk_ethernet - PV Got video_format: %s.", formatStr.c_str());
+        ROS_INFO("flir_adk_ethernet - Got video_format: %s.", formatStr.c_str());
         ROS_INFO("flir_adk_ethernet - Got camera_type: %s.", camType.c_str());
         ROS_INFO("flir_adk_ethernet - Got width: %d.", width);
         ROS_INFO("flir_adk_ethernet - Got height: %d.", height);
