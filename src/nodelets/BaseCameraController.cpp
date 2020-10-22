@@ -31,8 +31,8 @@ void BaseCameraController::onInit()
         pnh = getPrivateNodeHandle();
 
         it = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nh));
-        _imagePublisher16 = it->advertiseCamera("image_raw16", 1);
         _imagePublisher = it->advertiseCamera("image_raw", 1);
+        _imagePublisher8 = it->advertiseCamera("image_raw8", 1);
         setupExtraPubSub();
 
         setupCommandListeners();
@@ -201,12 +201,12 @@ bool BaseCameraController::publishImage(ros::Time timestamp) {
         auto publishedImage = _cvImage.toImageMsg();
 
         ci->header.stamp = publishedImage->header.stamp;
-        _imagePublisher16.publish(publishedImage, ci);
+        _imagePublisher.publish(publishedImage, ci);
 
         _cvImage.image = thermalMat8;
         _cvImage.encoding = "mono8";
         auto publishedImage8 = _cvImage.toImageMsg();
-        _imagePublisher.publish(publishedImage8, ci);
+        _imagePublisher8.publish(publishedImage8, ci);
 
         _seq++;
         return true;
