@@ -32,18 +32,20 @@ void SyncCameraController::setupFramePublish() {
         boost::bind(&SyncCameraController::publishImage, this, _1));
 }
 
-void SyncCameraController::publishImage(const std_msgs::Time::ConstPtr& message)
+bool SyncCameraController::publishImage(const std_msgs::Time::ConstPtr& message)
 {
-    BaseCameraController::publishImage(message->data);
-
-    // publish the camera-reported timestamp
-    uint64_t actualCaptureTime = _camera->getActualTimestamp();
-    MultiTimeHeader timeHeader;
-    timeHeader.header.frame_id = frame_id;
-    timeHeader.header.seq = _cvImage.header.seq;
-    timeHeader.header.stamp = _cvImage.header.stamp;
-    timeHeader.actual_stamp = timeFromNSec(actualCaptureTime);
-    _timePublisher.publish(timeHeader);
+    if (BaseCameraController::publishImage(message->data)) {
+        // publish the camera-reported timestamp
+        uint64_t actualCaptureTime = _camera->getActualTimestamp();
+        MultiTimeHeader timeHeader;
+        timeHeader.header.frame_id = frame_id;
+        timeHeader.header.seq = _cvImage.header.seq;
+        timeHeader.header.stamp = _cvImage.header.stamp;
+        timeHeader.actual_stamp = timeFromNSec(actualCaptureTime);
+        _timePublisher.publish(timeHeader);
+        return true;
+    }
+    return false;
 }
 
 ros::Time SyncCameraController::timeFromNSec(uint64_t nsec) {

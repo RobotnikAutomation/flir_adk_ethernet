@@ -32,7 +32,7 @@ class SyncCameraController : public BaseCameraController
     // virtual void onInit();
     virtual void setupExtraPubSub() override;
     virtual void setupFramePublish() override;
-    void publishImage(const std_msgs::Time::ConstPtr& message);
+    bool publishImage(const std_msgs::Time::ConstPtr& message);
     ros::Time timeFromNSec(uint64_t nsecs);
 
     ros::Publisher _timePublisher;

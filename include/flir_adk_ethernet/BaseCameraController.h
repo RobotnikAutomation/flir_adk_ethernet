@@ -69,7 +69,7 @@ class BaseCameraController : public nodelet::Nodelet
     // sets up subscribers for command and control
     virtual void setupCommandListeners();
     // publishes frame to topic
-    void publishImage(ros::Time timestamp);
+    bool publishImage(ros::Time timestamp);
     
 
     // command listeners

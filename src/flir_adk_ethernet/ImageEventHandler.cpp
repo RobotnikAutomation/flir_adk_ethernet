@@ -42,8 +42,8 @@ void ImageEventHandler::Init() {
 }
 
 ImageInfo ImageEventHandler::GetImageInfo() {
-    return ImageInfo {m_resultImage->GetWidth(), m_resultImage->GetHeight(),
-                m_resultImage->GetBufferSize()};
+    return ImageInfo {(int)m_resultImage->GetWidth(), (int)m_resultImage->GetHeight(),
+                (int)m_resultImage->GetBufferSize()};
 }
 
 // int framesPerSecond = 0;
@@ -70,12 +70,10 @@ void ImageEventHandler::OnImageEvent(ImagePtr image) {
 }
 
 void *ImageEventHandler::GetImageData() {
+    std::lock_guard<std::mutex> guard(m_mutex); // hold the mutex until after return
     if(m_resultImage == nullptr) {
         throw "No image has been received";
     }
-
-    m_mutex.lock();
-    m_mutex.unlock();
     return m_resultImage->GetData();
 }
 

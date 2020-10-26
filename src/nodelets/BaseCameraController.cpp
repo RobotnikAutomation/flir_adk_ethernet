@@ -24,67 +24,70 @@ BaseCameraController::~BaseCameraController()
 
 void BaseCameraController::onInit()
 {
-    nh = getNodeHandle();
-    pnh = getPrivateNodeHandle();
-    
-    it = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nh));
-    _imagePublisher = it->advertiseCamera("image_raw", 1);
-    setupExtraPubSub();
-
-    setupCommandListeners();
-
     bool exit = false;
 
-    std::string ip, cameraInfoStr, formatStr, camType;
-    int width, height, xOffset, yOffset;
+    try {
+        nh = getNodeHandle();
+        pnh = getPrivateNodeHandle();
 
-    pnh.param<std::string>("frame_id", frame_id, "boson_camera");
-    pnh.param<std::string>("ip_addr", ip, "");
-    pnh.param<std::string>("camera_type", camType, "");
-    pnh.param<std::string>("camera_info_url", cameraInfoStr, "");
-    pnh.param<std::string>("video_format", formatStr, "COLOR_8");
-    pnh.param<int>("width", width, 0);
-    pnh.param<int>("height", height, 0);
-    pnh.param<int>("xOffset", xOffset, 0);
-    pnh.param<int>("yOffset", yOffset, 0);
+        it = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nh));
+        _imagePublisher = it->advertiseCamera("image_raw", 1);
+        setupExtraPubSub();
 
-    ROS_INFO("flir_adk_ethernet - Got frame_id: %s.", frame_id.c_str());
-    ROS_INFO("flir_adk_ethernet - Got IP: %s.", ip.c_str());
-    ROS_INFO("flir_adk_ethernet - Got camera_info_url: %s.", 
-        cameraInfoStr.c_str());
-    ROS_INFO("flir_adk_ethernet - Got video_format: %s.", formatStr.c_str());
-    ROS_INFO("flir_adk_ethernet - Got camera_type: %s.", camType.c_str());
-    ROS_INFO("flir_adk_ethernet - Got width: %d.", width);
-    ROS_INFO("flir_adk_ethernet - Got height: %d.", height);
-    ROS_INFO("flir_adk_ethernet - Got xOffset: %d.", xOffset);
-    ROS_INFO("flir_adk_ethernet - Got yOffset: %d.", yOffset);
+        setupCommandListeners();
 
-    EthernetCameraInfo info;
-    info.ip = ip;
-    info.camInfoPath = cameraInfoStr;
-    info.pixelFormat = formatStr;
-    info.camType = camType;
-    info.width = width;
-    info.height = height;
-    info.xOffset = xOffset;
-    info.yOffset = yOffset;
+        std::string ip, cameraInfoStr, formatStr, camType;
+        int width, height, xOffset, yOffset;
 
-    auto sys = std::make_shared<SystemWrapper>(
-        SystemWrapper(System::GetInstance()));
+        pnh.param<std::string>("frame_id", frame_id, "boson_camera");
+        pnh.param<std::string>("ip_addr", ip, "");
+        pnh.param<std::string>("camera_type", camType, "");
+        pnh.param<std::string>("camera_info_url", cameraInfoStr, "");
+        pnh.param<std::string>("video_format", formatStr, "COLOR_8");
+        pnh.param<int>("width", width, 0);
+        pnh.param<int>("height", height, 0);
+        pnh.param<int>("xOffset", xOffset, 0);
+        pnh.param<int>("yOffset", yOffset, 0);
 
-    _camera = new EthernetCamera(info, sys, nh);
+        ROS_INFO("flir_adk_ethernet - Got frame_id: %s.", frame_id.c_str());
+        ROS_INFO("flir_adk_ethernet - Got IP: %s.", ip.c_str());
+        ROS_INFO("flir_adk_ethernet - Got camera_info_url: %s.", cameraInfoStr.c_str());
+        ROS_INFO("flir_adk_ethernet - Got video_format: %s.", formatStr.c_str());
+        ROS_INFO("flir_adk_ethernet - Got camera_type: %s.", camType.c_str());
+        ROS_INFO("flir_adk_ethernet - Got width: %d.", width);
+        ROS_INFO("flir_adk_ethernet - Got height: %d.", height);
+        ROS_INFO("flir_adk_ethernet - Got xOffset: %d.", xOffset);
+        ROS_INFO("flir_adk_ethernet - Got yOffset: %d.", yOffset);
 
-    if (!exit) {
-        exit = !_camera->openCamera() || exit;
+        EthernetCameraInfo info;
+        info.ip = ip;
+        info.camInfoPath = cameraInfoStr;
+        info.pixelFormat = formatStr;
+        info.camType = camType;
+        info.width = width;
+        info.height = height;
+        info.xOffset = xOffset;
+        info.yOffset = yOffset;
+
+        auto sys = std::make_shared<SystemWrapper>(SystemWrapper(System::GetInstance()));
+
+        _camera = new EthernetCamera(info, sys, nh);
+
+	if (_camera->openCamera()) {
+	    setupFramePublish();
+	} else {
+	    exit = true;
+	}
+    }
+    catch (Spinnaker::Exception exc) {
+        ROS_INFO("%s", exc.what());
+        exit = true;
     }
 
-    if (exit)
-    {
+    if (exit) {
         ros::shutdown();
         return;
     }
-    
-    setupFramePublish();
 }
 
 void BaseCameraController::setupExtraPubSub() {
@@ -180,7 +183,7 @@ void BaseCameraController::setCenterROI(const sensor_msgs::RegionOfInterestConst
 
 
 
-void BaseCameraController::publishImage(ros::Time timestamp) {
+bool BaseCameraController::publishImage(ros::Time timestamp) {
     sensor_msgs::CameraInfoPtr
         ci(new sensor_msgs::CameraInfo(_camera->getCameraInfo()));
 
@@ -198,8 +201,10 @@ void BaseCameraController::publishImage(ros::Time timestamp) {
         _imagePublisher.publish(publishedImage, ci);
 
         _seq++;
+        return true;
     } catch(exception e) {
         // just don't publish this frame
         std::cout << "Publish exception" << std::endl;
+        return false;
     }
 }
