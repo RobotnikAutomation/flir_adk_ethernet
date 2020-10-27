@@ -32,6 +32,7 @@ void BaseCameraController::onInit()
 
         it = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nh));
         _imagePublisher = it->advertiseCamera("image_raw", 1);
+        _imagePublisher8 = it->advertiseCamera("image_raw8", 1);
         setupExtraPubSub();
 
         setupCommandListeners();
@@ -189,6 +190,8 @@ bool BaseCameraController::publishImage(ros::Time timestamp) {
 
     try {
         auto thermalMat = _camera->getImageMatrix();
+        Mat thermalMat8;
+        normalize(thermalMat, thermalMat8, 0, 255, NORM_MINMAX, CV_8UC1);
         _cvImage.image = thermalMat;
         _cvImage.encoding = _camera->getEncoding();
         _cvImage.header.stamp = timestamp;
@@ -199,6 +202,11 @@ bool BaseCameraController::publishImage(ros::Time timestamp) {
 
         ci->header.stamp = publishedImage->header.stamp;
         _imagePublisher.publish(publishedImage, ci);
+
+        _cvImage.image = thermalMat8;
+        _cvImage.encoding = "mono8";
+        auto publishedImage8 = _cvImage.toImageMsg();
+        _imagePublisher8.publish(publishedImage8, ci);
 
         _seq++;
         return true;
